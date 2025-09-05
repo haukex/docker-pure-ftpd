@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "mads-hartmann.bash-ide-vscode",
+        "timonwong.shellcheck"
+    ]
+}
