@@ -34,8 +34,8 @@ if [[ -z "${DISABLE_UPLOAD_LOG:-}" ]]; then
     # Lock is released automatically when script ends (or FD 200 is closed)
 fi
 
-if [[ -n "${REDIS_HOST:-}" ]]; then
-    if ! redis-cli -t 10 -h "$REDIS_HOST" XADD pure-ftpd.uploads \* time "$now" user "$virtual_user" size "$file_size" name "$new_file"; then
-        logger -p ftp.warning -t uploadscript.sh "FAILED: redis-cli -h $REDIS_HOST XADD ..."
+if [[ -n "${VALKEY_HOST:-}" ]]; then
+    if ! valkey-cli -t 10 -h "$VALKEY_HOST" XADD pure-ftpd.uploads \* time "$now" user "$virtual_user" size "$file_size" name "$new_file"; then
+        logger -p ftp.warning -t uploadscript.sh "FAILED: valkey-cli -h $VALKEY_HOST XADD ..."
     fi
 fi

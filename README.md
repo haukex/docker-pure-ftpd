@@ -20,10 +20,11 @@ Real SSL certificates can be configured by pointing the symlinks
 `/etc/pure-ftpd/ssl-cert.pem -> /etc/ssl/certs/ssl-cert-snakeoil.pem`
 in the image at the desired SSL certificates.
 
-If the environment variable `REDIS_HOST` is set, then log messages are
+If the environment variable `VALKEY_HOST` is set, then log messages are
 sent to the stream `pure-ftpd.log` and upload messages to `pure-ftpd.uploads`.
-The Redis host not being available is (currently) not a fatal error.
-TODO: These streams are currently not cleaned up by this container.
+The Valkey host not being available is (currently) not a fatal error.
+**Note** these streams are not cleaned up by this container, so you'll need to,
+for example, do a regular `XTRIM` on them.
 
 To run a quick test of this server:
 
@@ -33,12 +34,12 @@ To run a quick test of this server:
         --publish "127.0.0.1:2121:21" --publish "127.0.0.1:30000-30009:30000-30009" --init pure-ftpd
     lftp -e 'set ssl:verify-certificate no' -u testuser,PASSWORD localhost:2121
 
-To do a quick test of the Redis integration:
+To do a quick test of the Valkey integration:
 
-- `docker run --publish="127.0.0.1:6379:6379" -it --rm redis:8`
-- If you want to debug the running Redis and see all incoming messages:
-  `docker exec -it "$(docker container ls --quiet --filter ancestor=redis:8 --latest)" redis-cli MONITOR`
-- Then, add `--add-host=host.docker.internal:host-gateway --env REDIS_HOST=host.docker.internal`
+- `docker run --publish="127.0.0.1:6379:6379" -it --rm valkey/valkey:8`
+- If you want to debug the running Valkey and see all incoming messages:
+  `docker exec -it "$(docker container ls --quiet --filter ancestor=valkey/valkey:8 --latest)" valkey-cli MONITOR`
+- Then, add `--add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal`
   to the above `docker run`.
 
 TODO: I'd like to add some automated test scripts.

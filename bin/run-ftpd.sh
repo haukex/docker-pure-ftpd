@@ -30,17 +30,17 @@ logger -p ftp.notice -t pure-ftpd "A log message \"Unable to find the 'ftp' acco
 # Pure-FTPd will accept anonymous login, as 'ftp' or 'anonymous'."
 
 if [[ -n "${DISABLE_UPLOAD_LOG:-}" ]]; then
-    if [[ -z "${REDIS_HOST:-}" ]]; then
-        echo "WARNING: Upload log file and Redis are disabled, there will be no upload logging!" >&2
+    if [[ -z "${VALKEY_HOST:-}" ]]; then
+        echo "WARNING: Upload log file and Valkey are disabled, there will be no upload logging!" >&2
     else
-        echo "NOTICE: Upload log will go to Redis, not to file." >&2
+        echo "NOTICE: Upload log will go to Valkey, not to file." >&2
     fi
 fi
 if [[ -n "${DISABLE_LOG_FILE:-}" ]]; then
-    if [[ -z "${REDIS_HOST:-}" ]]; then
-        echo "WARNING: Log file and Redis are disabled, there will be no FTP server logging!" >&2
+    if [[ -z "${VALKEY_HOST:-}" ]]; then
+        echo "WARNING: Log file and Valkey are disabled, there will be no FTP server logging!" >&2
     else
-        echo "NOTICE: FTP server log output will go to Redis, not to file." >&2
+        echo "NOTICE: FTP server log output will go to Valkey, not to file." >&2
     fi
 fi
 

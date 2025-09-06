@@ -24,10 +24,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 # ### Download, build, and install pure-ftpd (and rsyslog; and lftp as a utility inside the container)
 # The perl imklog command just comments out kernel logging support (the line `module(load="imklog")`)
 # Also prepares the generation of the snakeoil SSL certs (via ssl-cert)
-# redis-tools is needed for redis-cli, which uploadscript.sh optionally uses (at the time of writing, it's at version 8.0.2)
+# valkey-tools is needed for valkey-cli, which uploadscript.sh optionally uses (at the time of writing, it's at version 8)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        rsyslog rsyslog-hiredis lftp ssl-cert redis-tools \
+        rsyslog rsyslog-hiredis lftp ssl-cert valkey-tools \
     && perl -wMstrict -i -ple 's/^(?=\s*module\s*\(\s*[^)]*\bimklog\b)/#/' /etc/rsyslog.conf \
     && rm -f /etc/ssl/private/ssl-cert-snakeoil.key \
     && rm -f /etc/ssl/certs/ssl-cert-snakeoil.pem \
