@@ -17,6 +17,11 @@ make-ssl-cert generate-default-snakeoil --force-overwrite
 
 /usr/local/bin/userinit.sh
 
+# ensure the upload.log can be written to - the uploadscript, which isn't run as root,
+# may not have write permissions if /srv/ftp is mounted to the Docker host
+touch /srv/ftp/upload.log
+chown -c pure-ftpd /srv/ftp/upload.log
+
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf
 # wait for the named pipe to appear before starting uploadscript
