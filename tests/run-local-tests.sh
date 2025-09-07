@@ -46,7 +46,7 @@ finalize() {
     if [[ "$exit_code" -ne 0 ]]; then echo "FAIL!"; fi
 }
 trap 'finalize "$?"' EXIT
-trap 'finalize 130' SIGINT SIGTERM
+trap 'finalize 256' SIGINT SIGTERM
 mkdir -v "$temp_dir/ftp" "$temp_dir/logs"
 echo "test_user:PASS_WORD" >"$temp_dir/ftp-passwd"
 

@@ -1,0 +1,15 @@
+name: Run Local Tests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y lftp valkey-tools
+      - name: Run tests
+        run: tests/run-local-tests.sh
