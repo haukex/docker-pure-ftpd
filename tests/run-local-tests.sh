@@ -4,6 +4,10 @@ cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"/..
 # This file is a part of the haukex/docker-pure-ftpd repository.
 # Please see the README for author, copyright, and license info.
 
+# This bash script can optionally be passed an image name to use
+default_image_name="pure-ftpd:testing"
+image_name="${1:-$default_image_name}"
+
 # check for required tools
 if ! lftp --version >/dev/null; then
     echo "lftp not installed? (Hint: sudo apt install lftp)" >&2
@@ -14,8 +18,10 @@ if ! valkey-cli --version >/dev/null; then
     exit 1
 fi
 
-# Build an image for us to use
-docker build . -t 'pure-ftpd:testing'
+# Build an image for us to use (if needed)
+if [[ "$image_name" == "$default_image_name" ]]; then
+    docker build . -t "$default_image_name"
+fi
 
 # Function for cleaning up running docker containers on exit
 running_containers=()  # Remember to add each started container to this array
@@ -36,7 +42,7 @@ cleanup_tempdirs() {
     docker run \
         --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
         --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
-        --rm pure-ftpd:testing find /srv/ftp /var/log/pure-ftpd -mindepth 1 -delete -print
+        --rm "$image_name" find /srv/ftp /var/log/pure-ftpd -mindepth 1 -delete -print
 }
 finalize() {
     exit_code=$1
@@ -57,7 +63,7 @@ ftp_id="$( docker run \
     --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
     --publish 127.0.0.1:2121:21/tcp \
     --publish 127.0.0.1:30000-30009:30000-30009/tcp \
-    --rm --detach --init pure-ftpd:testing )"
+    --rm --detach --init "$image_name" )"
 running_containers+=("$ftp_id")
 
 tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" \
@@ -81,7 +87,7 @@ ftp_id="$( docker run \
     --publish 127.0.0.1:30000-30009:30000-30009/tcp \
     --add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal \
     --env DISABLE_LOG_FILE=1 --env DISABLE_UPLOAD_LOG=1 \
-    --rm --detach --init pure-ftpd:testing )"
+    --rm --detach --init "$image_name" )"
 running_containers+=("$ftp_id")
 
 tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" -L -v localhost
