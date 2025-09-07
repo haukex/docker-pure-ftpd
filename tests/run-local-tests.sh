@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"/..
+# This file is a part of the haukex/docker-pure-ftpd repository.
+# Please see the README for author, copyright, and license info.
 
 # check for required tools
 if ! lftp --version >/dev/null; then

@@ -1,4 +1,6 @@
 #!/usr/bin/env perl
+# This file is a part of the haukex/docker-pure-ftpd repository.
+# Please see the README for author, copyright, and license info.
 use 5.014;  # strict, /r
 use warnings;
 use Data::Dumper ();
