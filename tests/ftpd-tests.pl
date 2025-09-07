@@ -27,6 +27,19 @@ my $td = tempdir(CLEANUP=>1); my $tfh;
 open $tfh, '>', "$td/Hello.txt" and print $tfh "World\n" and close $tfh or die $!;
 open $tfh, '>', "$td/foo.txt"   and print $tfh "bar\n"   and close $tfh or die $!;
 
+# if the user requested Valkey tests, let's make sure the server is up and running first
+if ($opts{v}) {
+    my $uploads;
+    my $retry_count = 5;
+    while (1) {
+        last if `valkey-cli -h "$opts{v}" --raw PING` =~ /^PONG$/;
+        die "Valkey didn't pong" unless $retry_count--;
+        warn "Valkey not up yet, retying...\n";
+        sleep 1;
+    }
+    say "Valkey server is up";
+}
+
 # upload the test files (using lftp because Net::FTP didn't work for me)
 # lftp has a built-in auto-retry feature, so just use that in case the Docker container isn't quite ready yet
 system('lftp','-u',"$opts{u},$opts{p}",$opts{h},'-e',
