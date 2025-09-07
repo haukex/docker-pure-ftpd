@@ -6,6 +6,7 @@ use warnings;
 use Data::Dumper ();
 use File::Temp 'tempdir';
 use Getopt::Std 'getopts';
+use JSON::PP 'decode_json';
 use Fcntl qw/ :flock :seek /;
 use File::Spec::Functions qw/ no_upwards /;
 
@@ -26,10 +27,6 @@ my $td = tempdir(CLEANUP=>1); my $tfh;
 open $tfh, '>', "$td/Hello.txt" and print $tfh "World\n" and close $tfh or die $!;
 open $tfh, '>', "$td/foo.txt"   and print $tfh "bar\n"   and close $tfh or die $!;
 
-warn "WARNING: Valkey testing not yet implemented\n" if $opts{v};  #TODO: -v valkey test support
-#valkey-cli --raw XRANGE pure-ftpd.log - +
-#valkey-cli --raw XRANGE pure-ftpd.uploads - +
-
 # upload the test files (using lftp because Net::FTP didn't work for me)
 # lftp has a built-in auto-retry feature, so just use that in case the Docker container isn't quite ready yet
 system('lftp','-u',"$opts{u},$opts{p}",$opts{h},'-e',
@@ -38,15 +35,15 @@ system('lftp','-u',"$opts{u},$opts{p}",$opts{h},'-e',
 )==0 or die "lftp failed: \$!=$!, \$?=$?";
 
 # check upload.log
+my $upload_log_re = qr{\A
+    [-0-9T:,+]+ \t \Q$opts{u}\E \t 6 \t \Q/srv/ftp/$opts{u}/Hello.txt\E \n
+    [-0-9T:,+]+ \t \Q$opts{u}\E \t 4 \t \Q/srv/ftp/$opts{u}/foo.txt\E \n?
+\z}x;
 if ($opts{L}) {
     sleep 1;  # make sure it hasn't changed even after a short wait (see loop below)
     -s "$opts{f}/upload.log" and die "upload.log non-empty when it shouldn't be" or say "ok: upload.log doesn't exist or is empty";
 }
 else {
-    my $upload_log_re = qr{\A
-        [-0-9T:,+]+ \t \Q$opts{u}\E \t 6 \t \Q/srv/ftp/$opts{u}/Hello.txt\E \n
-        [-0-9T:,+]+ \t \Q$opts{u}\E \t 4 \t \Q/srv/ftp/$opts{u}/foo.txt\E \n
-    \z}x;
     # uploadscript.sh may need a few ms to finish executing
     my $retry_count = 5;
     while(1) {
@@ -96,13 +93,39 @@ if ($opts{r}) {
     die "Non-files in $opts{l}: ".pp(\@non_files) if @non_files;
     my @non_match = grep { !/\Aftpd\.log(?:\.[-0-9]+\.gz)?\z/ } @files;
     die "Strangely named files in $opts{l}: ".pp(\@non_match) if @non_match;
-    say "ok: filenames in $opts{l} look ok ".pp(\@files);
+    die "Don't see one ftpd.log in $opts{l}: ".pp(\@files) unless grep({$_ eq 'ftpd.log'} @files)==1;
+    die "Don't see any .gz files in $opts{l}: ".pp(\@files) unless grep {/\.gz$/} @files;
+    say "ok: filenames in log dir look ok";
 
-    warn "WARNING: log rotation tests not yet fully implemented\n"; #TODO
-    # need to pick the newest rotated log and check `zcat "$opts{l}/$1"` =~ $ftpd_log_re;
+    # assume the latest log is the one we just rotated (should only fail in really unexpected cases)
+    my $log_f = (sort grep {$_ ne 'ftpd.log'} @files)[-1];
+    my $rot_log = `zcat "$opts{l}/$log_f"`;
+    $rot_log =~ $ftpd_log_re and say "rotated ftpd log ok" or die "rotated log mismatch".pp($rot_log);
 
     -s "$opts{l}/ftpd.log" and say "ok: new log isn't empty"
         or die "new log is empty (maybe LOGROTATE_CMD didn't force a new log entry?)";
+}
+
+# valkey tests
+if ($opts{v}) {
+    my $uploads;
+    my $retry_count = 5;
+    while (1) {
+        $uploads = decode_json `valkey-cli -h "$opts{v}" --quoted-json XRANGE pure-ftpd.uploads - +`;
+        last if @$uploads>=2;
+        die  "didn't get two valkey uploads: ".pp($uploads) unless $retry_count-->0;
+        warn "don't have two valkey uploads yet, waiting...\n";
+        sleep 1;
+    }
+    for my $x (@$uploads) {
+        my $keys = join(',',@{$x->[1]}[0,2,4,6]);
+        die "bad keys $keys" unless $keys eq 'time,user,size,name';
+    }
+    my $vk_up_log = join("\n", map { join "\t", @{$_->[1]}[1,3,5,7] } @$uploads);
+    $vk_up_log =~ $upload_log_re and say "valkey uploads ok" or die "valkey uploads mismatch: ".pp($vk_up_log);
+
+    my $logs = `valkey-cli -h "$opts{v}" --raw XRANGE pure-ftpd.log - +`;
+    $logs =~ $ftpd_log_re and say "valkey logs ok" or die "valkey logs mismatch: ".pp($logs);
 }
 
 sub list_files {
