@@ -29,20 +29,22 @@ for example, do a regular `XTRIM` on them.
 To run a quick test of this server:
 
     docker build . -t 'pure-ftpd:latest' && docker system prune -f
-    echo "testuser:PASSWORD" >/tmp/dummy-ftp-passwd
+    echo "test_user:PASS_WORD" >/tmp/dummy-ftp-passwd
     docker run --rm --mount type=bind,source=/tmp/dummy-ftp-passwd,target=/run/secrets/ftp-passwd,readonly \
-        --publish "127.0.0.1:2121:21" --publish "127.0.0.1:30000-30009:30000-30009" --init pure-ftpd
-    lftp -e 'set ssl:verify-certificate no' -u testuser,PASSWORD localhost:2121
+        --publish "127.0.0.1:2121:21" --publish "127.0.0.1:30000-30009:30000-30009" --init pure-ftpd:latest
+    lftp -e 'set ssl:verify-certificate no' -u test_user,PASS_WORD localhost:2121
 
 To do a quick test of the Valkey integration:
 
-- `docker run --publish="127.0.0.1:6379:6379" -it --rm valkey/valkey:8`
+- `docker run --publish="127.0.0.1:6379:6379" --rm valkey/valkey:8`
 - If you want to debug the running Valkey and see all incoming messages:
-  `docker exec -it "$(docker container ls --quiet --filter ancestor=valkey/valkey:8 --latest)" valkey-cli MONITOR`
+  `docker exec -it "$(docker container ls --quiet --latest --filter ancestor=valkey/valkey:8)" valkey-cli MONITOR`
 - Then, add `--add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal`
   to the above `docker run`.
 
-TODO: I'd like to add some automated test scripts.
+To run the test suite on locally spawned Docker containers, use `tests/run-local-tests.sh`.
+The script `tests/ftp-tests.pl` can also be used on a deployed server.
+`lftp` and `valkey-cli` are required for the tests.
 
 
 Author, Copyright, and License

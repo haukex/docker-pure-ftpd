@@ -1,0 +1,85 @@
+#!/bin/bash
+set -euxo pipefail
+cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"/..
+
+# check for required tools
+if ! lftp --version >/dev/null; then
+    echo "lftp not installed? (Hint: sudo apt install lftp)" >&2
+    exit 1
+fi
+if ! valkey-cli --version >/dev/null; then
+    echo "valkey-cli not installed? (Hint: sudo apt install valkey-tools)" >&2
+    exit 1
+fi
+
+# Build an image for us to use
+docker build . -t 'pure-ftpd:testing'
+
+# Function for cleaning up running docker containers on exit
+running_containers=()  # Remember to add each started container to this array
+cleanup_containers() {
+    for container in "${running_containers[@]}"; do docker stop "$container"; done
+    running_containers=()
+}
+
+# Note: The Docker documentation states that bind mounts should fail if the source doesn't exist on the host.
+# However, I am experiencing different behavior: `docker run --rm -it --mount type=bind,src=/no_such_path,dst=/mnt alpine sh`
+# creates a directory /no_such_path/ on my host machine. Looks like https://github.com/docker/for-win/issues/11958
+
+# Set up temp directories for volumes
+temp_dir="$( mktemp --directory )"
+cleanup_tempdirs() {
+    # a slightly complicated way to gain the privileges needed to clean up these files
+    # (I didn't feel like requiring the user of these tests to have sudo rights, docker is enough)
+    docker run \
+        --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
+        --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
+        --rm pure-ftpd:testing find /srv/ftp /var/log/pure-ftpd -mindepth 1 -delete -print
+}
+finalize() {
+    exit_code=$1
+    cleanup_containers
+    cleanup_tempdirs
+    rm -rf "$temp_dir"
+    if [[ "$exit_code" -ne 0 ]]; then echo "FAIL!"; fi
+}
+trap 'finalize "$?"' EXIT
+trap 'finalize 130' SIGINT SIGTERM
+mkdir -v "$temp_dir/ftp" "$temp_dir/logs"
+echo "test_user:PASS_WORD" >"$temp_dir/ftp-passwd"
+
+# ### Spin up a regular Pure-FTPd Docker container
+ftp_id="$( docker run \
+    --mount type=bind,source="$temp_dir/ftp-passwd",target=/run/secrets/ftp-passwd,readonly \
+    --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
+    --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
+    --publish 127.0.0.1:2121:21/tcp \
+    --publish 127.0.0.1:30000-30009:30000-30009/tcp \
+    --rm --detach --init pure-ftpd:testing )"
+running_containers+=("$ftp_id")
+
+tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" \
+    -r "docker exec \"$ftp_id\" bash -c '/usr/local/bin/logrotate.sh \
+    && kill -HUP \`cat /var/run/rsyslogd.pid\` && logger -p ftp.notice Rotated'"
+
+# clean up so the next test has a fresh start
+cleanup_containers
+cleanup_tempdirs
+
+# ### Spin up a regular container together with Valkey and file output disabled
+valkey_id="$( docker run \
+    --publish="127.0.0.1:6379:6379/tcp" \
+    --rm --detach valkey/valkey:8 )"
+running_containers+=("$valkey_id")
+ftp_id="$( docker run \
+    --mount type=bind,source="$temp_dir/ftp-passwd",target=/run/secrets/ftp-passwd,readonly \
+    --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
+    --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
+    --publish 127.0.0.1:2121:21/tcp \
+    --publish 127.0.0.1:30000-30009:30000-30009/tcp \
+    --add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal \
+    --env DISABLE_LOG_FILE=1 --env DISABLE_UPLOAD_LOG=1 \
+    --rm --detach --init pure-ftpd:testing )"
+running_containers+=("$ftp_id")
+
+tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" -L -v localhost
