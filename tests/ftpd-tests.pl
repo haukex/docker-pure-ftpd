@@ -30,10 +30,10 @@ open $tfh, '>', "$td/foo.txt"   and print $tfh "bar\n"   and close $tfh or die $
 # if the user requested Valkey tests, let's make sure the server is up and running first
 if ($opts{v}) {
     my $uploads;
-    my $retry_count = 5;
+    my $retry_count = 10;
     while (1) {
         last if `valkey-cli -h "$opts{v}" --raw PING` =~ /^PONG$/;
-        die "Valkey didn't pong" unless $retry_count--;
+        die "Valkey didn't pong" unless $retry_count-->0;
         warn "Valkey not up yet, retying...\n";
         sleep 1;
     }
@@ -58,7 +58,7 @@ if ($opts{L}) {
 }
 else {
     # uploadscript.sh may need a few ms to finish executing
-    my $retry_count = 5;
+    my $retry_count = 10;
     while(1) {
         open my $fh, '<', "$opts{f}/upload.log" or die "open: $!";
         # the writer script flocks the upload.log too
@@ -122,7 +122,7 @@ if ($opts{r}) {
 # valkey tests
 if ($opts{v}) {
     my $uploads;
-    my $retry_count = 5;
+    my $retry_count = 10;
     while (1) {
         $uploads = decode_json `valkey-cli -h "$opts{v}" --quoted-json XRANGE pure-ftpd.uploads - +`;
         last if @$uploads>=2;
