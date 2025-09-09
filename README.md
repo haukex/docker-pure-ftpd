@@ -28,19 +28,11 @@ for example, do a regular `XTRIM` on them.
 
 To run a quick test of this server:
 
-    docker build . -t 'pure-ftpd:latest' && docker system prune -f
+    docker build . -t 'pure-ftpd:testing' && docker system prune -f
     echo "test_user:PASS_WORD" >/tmp/dummy-ftp-passwd
     docker run --rm --mount type=bind,source=/tmp/dummy-ftp-passwd,target=/run/secrets/ftp-passwd,readonly \
-        --publish "127.0.0.1:2121:21" --publish "127.0.0.1:30000-30009:30000-30009" --init pure-ftpd:latest
+        --publish "127.0.0.1:2121:21" --publish "127.0.0.1:30000-30009:30000-30009" --init pure-ftpd:testing
     lftp -e 'set ssl:verify-certificate no' -u test_user,PASS_WORD localhost:2121
-
-To do a quick test of the Valkey integration:
-
-- `docker run --publish="127.0.0.1:6379:6379" --rm valkey/valkey:8`
-- If you want to debug the running Valkey and see all incoming messages:
-  `docker exec -it "$(docker container ls --quiet --latest --filter ancestor=valkey/valkey:8)" valkey-cli MONITOR`
-- Then, add `--add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal`
-  to the above `docker run`.
 
 To run the test suite on locally spawned Docker containers, use `tests/run-local-tests.sh`.
 The script `tests/ftp-tests.pl` can also be used on a deployed server.

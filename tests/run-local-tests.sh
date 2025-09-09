@@ -23,11 +23,11 @@ if [[ "$image_name" == "$default_image_name" ]]; then
     docker build . -t "$default_image_name"
 fi
 
-# Function for cleaning up running docker containers on exit
-running_containers=()  # Remember to add each started container to this array
-cleanup_containers() {
-    for container in "${running_containers[@]}"; do docker stop "$container"; done
-    running_containers=()
+# Function for cleaning up running docker containers, networks, etc. on exit
+stop_commands=()  # Remember to add each started container to this array
+cleanup_commands() {
+    for (( idx=${#stop_commands[@]}-1 ; idx>=0 ; idx-- )); do ${stop_commands[idx]}; done
+    stop_commands=()
 }
 
 # Note: The Docker documentation states that bind mounts should fail if the source doesn't exist on the host.
@@ -46,7 +46,7 @@ cleanup_tempdirs() {
 }
 finalize() {
     exit_code=$1
-    cleanup_containers
+    cleanup_commands
     cleanup_tempdirs
     rm -rf "$temp_dir"
     if [[ "$exit_code" -ne 0 ]]; then echo "FAIL!"; fi
@@ -57,37 +57,43 @@ mkdir -v "$temp_dir/ftp" "$temp_dir/logs"
 echo "test_user:PASS_WORD" >"$temp_dir/ftp-passwd"
 
 # ### Spin up a regular Pure-FTPd Docker container
-ftp_id="$( docker run \
+ftp_id="$( docker run --name pure-ftpd-test-srv \
     --mount type=bind,source="$temp_dir/ftp-passwd",target=/run/secrets/ftp-passwd,readonly \
     --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
     --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
     --publish 127.0.0.1:2121:21/tcp \
     --publish 127.0.0.1:30000-30009:30000-30009/tcp \
     --rm --detach --init "$image_name" )"
-running_containers+=("$ftp_id")
+stop_commands+=("docker stop $ftp_id")
 
 tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" \
     -r "docker exec \"$ftp_id\" bash -c '/usr/local/bin/logrotate.sh \
     && kill -HUP \`cat /var/run/rsyslogd.pid\` && logger -p ftp.notice Rotated'"
 
 # clean up so the next test has a fresh start
-cleanup_containers
+cleanup_commands
 cleanup_tempdirs
 
 # ### Spin up a regular container together with Valkey and file output disabled
-valkey_id="$( docker run \
+docker network create pure-ftpd-test-net
+stop_commands+=("docker network rm pure-ftpd-test-net")
+valkey_id="$( docker run --name pure-ftpd-test-valkey \
     --publish="127.0.0.1:6379:6379/tcp" \
+    --network pure-ftpd-test-net \
     --rm --detach valkey/valkey:8 )"
-running_containers+=("$valkey_id")
-ftp_id="$( docker run \
+# Note: If you want to debug the running Valkey and see all incoming messages:
+# `docker exec -it "$(docker container ls --quiet --latest --filter ancestor=valkey/valkey:8)" valkey-cli MONITOR`
+stop_commands+=("docker stop $valkey_id")
+ftp_id="$( docker run --name pure-ftpd-test-srv \
     --mount type=bind,source="$temp_dir/ftp-passwd",target=/run/secrets/ftp-passwd,readonly \
     --mount type=bind,source="$temp_dir/ftp",target=/srv/ftp \
     --mount type=bind,source="$temp_dir/logs",target=/var/log/pure-ftpd \
     --publish 127.0.0.1:2121:21/tcp \
     --publish 127.0.0.1:30000-30009:30000-30009/tcp \
-    --add-host=host.docker.internal:host-gateway --env VALKEY_HOST=host.docker.internal \
+    --network pure-ftpd-test-net \
+    --env VALKEY_HOST=pure-ftpd-test-valkey \
     --env DISABLE_LOG_FILE=1 --env DISABLE_UPLOAD_LOG=1 \
     --rm --detach --init "$image_name" )"
-running_containers+=("$ftp_id")
+stop_commands+=("docker stop $ftp_id")
 
 tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" -L -v localhost

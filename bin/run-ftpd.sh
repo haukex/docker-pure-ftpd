@@ -25,7 +25,7 @@ chown -c pure-ftpd /srv/ftp/upload.log
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf
 # wait for the named pipe to appear before starting uploadscript
-while [[ ! -e /var/run/pure-ftpd.upload.pipe ]]; do sleep 0.1; done
+while [[ ! -e /var/run/pure-ftpd.upload.pipe ]]; do sleep 0.2; done
 pure-uploadscript -B -u "$(id -u pure-ftpd)" -g "$(id -g pure-ftpd)" -r /usr/local/bin/uploadscript.sh
 # note: pure-ftpd runs as root, workers and pure-uploadscript as uid=pure-ftpd gid=pure-ftpd
 
