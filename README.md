@@ -61,4 +61,4 @@ PERFORMANCE OF THIS SOFTWARE.
 Pure-FTPd, which is *not* distributed as part of this source repository, is
 Copyright (c) 2001 - 2025 Frank Denis <j at pureftpd dot org> with help of contributors,
 and is covered by the same license terms. It is available at
-<https://github.com/jedisct1/> and <https://www.pureftpd.org/>.
+<https://github.com/jedisct1/pure-ftpd> and <https://www.pureftpd.org/>.
