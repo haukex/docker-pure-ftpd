@@ -84,8 +84,8 @@ $foo_txt eq "bar\n" and say "foo.txt ok" or die "foo.txt mismatch: ".pp($foo_txt
 my $ftpd_log_re = qr{
     \QNew connection from\E .+
     \Qtest_user is now logged in\E .+
-    \Quploadscript.sh: Upload at \E[-0-9T:,+]+\Q file /srv/ftp/test_user/Hello.txt size 6 by test_user\E \n .+
-    \Quploadscript.sh: Upload at \E[-0-9T:,+]+\Q file /srv/ftp/test_user/foo.txt size 4 by test_user\E \n .*
+    \Quploadscript.sh: [\E[-0-9T:,+]+\Q] Upload file /srv/ftp/test_user/Hello.txt size 6 by test_user\E \n .+
+    \Quploadscript.sh: [\E[-0-9T:,+]+\Q] Upload file /srv/ftp/test_user/foo.txt size 4 by test_user\E \n .*
 }sx;
 if ($opts{L}) {
     my @files = list_files($opts{l});

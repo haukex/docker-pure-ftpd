@@ -15,7 +15,7 @@ rsyslogd -n &
 # generate the default snakeoil SSL certificates
 make-ssl-cert generate-default-snakeoil --force-overwrite
 
-/usr/local/bin/userinit.sh
+/usr/local/bin/user_init.sh
 
 # ensure the upload.log can be written to - the uploadscript, which isn't run as root,
 # may not have write permissions if /srv/ftp is mounted to the Docker host

@@ -1,9 +1,13 @@
 {
     "cSpell.words": [
         "ftpd",
-        "lftp",
         "snakeoil",
-        "uploadscript",
         "Valkey"
+    ],
+    "cSpell.ignoreWords": [
+        "VUSER",
+        "XADD",
+        "lftp",
+        "uploadscript"
     ]
 }

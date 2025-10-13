@@ -5,7 +5,7 @@ cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"/..
 # Please see the README for author, copyright, and license info.
 
 # This bash script can optionally be passed an image name to use
-default_image_name="pure-ftpd:testing"
+default_image_name="pure-ftpd:latest"
 image_name="${1:-$default_image_name}"
 
 # check for required tools
