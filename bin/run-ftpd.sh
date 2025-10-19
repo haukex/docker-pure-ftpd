@@ -8,6 +8,18 @@ set -meuxo pipefail
 # https://docs.docker.com/config/containers/multi-service_container/
 # IMPORTANT: need to run container with --init option
 
+if [[ -n "${VALKEY_HOST:-}" ]]; then
+    # wait for valkey to be up
+    retry_count=0
+    while ! valkey-cli -h "$VALKEY_HOST" --raw PING; do
+        sleep 0.2
+        if (( ++retry_count > 100 )); then
+            echo "Valkey is still not up!"
+            exit 1
+        fi
+    done
+fi
+
 # NOTE running rsyslogd this way appears to be better:
 # https://gist.github.com/haukex/1b3bfa8686b5bed18fd52ed13d99ceb7
 rsyslogd -n &
@@ -32,7 +44,14 @@ chown -c pure-ftpd:pure-ftpd /srv/ftp/upload.log
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf
 # wait for the named pipe to appear before starting uploadscript
-while [[ ! -e /var/run/pure-ftpd.upload.pipe ]]; do sleep 0.2; done
+retry_count=0
+while [[ ! -e /var/run/pure-ftpd.upload.pipe ]]; do
+    sleep 0.2
+    if (( ++retry_count > 100 )); then
+        echo "pure-ftpd.upload.pipe still doesn't exist!"
+        exit 1
+    fi
+done
 pure-uploadscript -B -u "$(id -u pure-ftpd)" -g "$(id -g pure-ftpd)" -r /usr/local/bin/uploadscript.sh
 # note: pure-ftpd runs as root, workers and pure-uploadscript as uid=pure-ftpd gid=pure-ftpd
 
