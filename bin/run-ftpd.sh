@@ -16,11 +16,11 @@ rsyslogd -n &
 make-ssl-cert generate-default-snakeoil --force-overwrite
 
 # Although the directories are set up in the Dockerfile, they might have been mounted
-chmod -c a+rx,u+w /srv
+chmod -c a+rx,u+w,o-w /srv
 chmod -c 2775 /srv/ftp
 chown -c pure-ftpd:pure-ftpd /srv/ftp
 
-chmod -c a+rx,u+w /var/log
+chmod -c a+rx,u+w,o-w /var/log
 chmod -c 2775 /var/log/pure-ftpd
 chown -c root:pure-ftpd /var/log/pure-ftpd
 

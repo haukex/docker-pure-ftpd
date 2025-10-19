@@ -20,7 +20,7 @@ fi
 
 # Build an image for us to use (if needed)
 if [[ "$image_name" == "$default_image_name" ]]; then
-    docker build . -t "$default_image_name"
+    docker build --progress=plain -t "$default_image_name" .
 fi
 
 # Function for cleaning up running docker containers, networks, etc. on exit

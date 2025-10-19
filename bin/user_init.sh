@@ -9,6 +9,7 @@ passwd_file="/etc/pure-ftpd/pure.passwd"
 db_file="/etc/pure-ftpd/puredb.pdb"
 base_path="/srv/ftp"
 ftp_user="pure-ftpd"
+ftp_group="pure-ftpd"
 
 while IFS= read -r line; do
     user="${line%%:*}"
@@ -23,9 +24,10 @@ while IFS= read -r line; do
     fi
     home="$base_path/$user"
     echo "##### user=$user home=$home"
-    mkdir -v "$home"
+    mkdir -vp "$home"
     chmod -c 2775 "$home"
-    chown -c "$ftp_user" "$home"
+    chown -Rc "$ftp_user:$ftp_group" "$home"
+    find "$home" -type d -exec chmod -c a+rx,u+w,o-w '{}' + -o -exec chmod -c a+r,u+w,o-w '{}' +
     printf '%s\n%s\n' "$pass" "$pass" | pure-pw useradd "$user" -f "$passwd_file" -u "$ftp_user" -d "$home"
 done < "$secret_file"
 
