@@ -27,7 +27,7 @@ chown -c root:pure-ftpd /var/log/pure-ftpd
 touch /srv/ftp/upload.log
 chown -c pure-ftpd:pure-ftpd /srv/ftp/upload.log
 
-/usr/local/bin/user_init.sh
+/usr/local/bin/user-init.sh
 
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf

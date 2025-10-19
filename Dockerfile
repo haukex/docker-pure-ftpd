@@ -52,7 +52,7 @@ RUN apt-get update \
 
 COPY --chmod=644 etc/pure-ftpd.conf /etc/pure-ftpd/
 COPY --chmod=644 etc/rsyslog.d-ftp.conf /etc/rsyslog.d/00-ftp.conf
-COPY --chmod=500 bin/user_init.sh bin/run-ftpd.sh /usr/local/bin/
+COPY --chmod=500 bin/user-init.sh bin/run-ftpd.sh /usr/local/bin/
 COPY --chmod=555 bin/uploadscript.sh bin/logrotate.sh /usr/local/bin/
 
 WORKDIR /srv/ftp
