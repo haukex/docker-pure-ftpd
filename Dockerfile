@@ -37,11 +37,11 @@ RUN apt-get update \
     && ln -snvf /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/pure-ftpd/ssl-cert.pem \
     && cd /usr/src \
     #&& git clone https://github.com/jedisct1/pure-ftpd.git pure-ftpd && cd pure-ftpd \
-    #&& git checkout 30cbb915f7e811cc459559a4c2469248e40c4068 \
+    #&& git checkout 7a5df7bfe16d1a1b9fead96a46b26e95aa809d80 \
     # the following does the same but only fetches that one commit, should be more efficient: \
     && mkdir pure-ftpd && cd pure-ftpd \
     && git init && git remote add origin https://github.com/jedisct1/pure-ftpd.git \
-    && git fetch --depth=1 origin 30cbb915f7e811cc459559a4c2469248e40c4068 && git checkout FETCH_HEAD \
+    && git fetch --depth=1 origin 7a5df7bfe16d1a1b9fead96a46b26e95aa809d80 && git checkout FETCH_HEAD \
     && sh autogen.sh \
     && ./configure --prefix=/usr --sysconfdir=/etc/pure-ftpd --without-inetd \
         --with-tls --with-paranoidmsg --with-boring --without-humor --without-usernames \

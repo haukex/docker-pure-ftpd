@@ -23,7 +23,7 @@ while IFS= read -r line; do
     fi
     home="$base_path/$user"
     echo "##### user=$user home=$home"
-    mkdir -vp "$home"
+    mkdir -v "$home"
     chmod -c 2775 "$home"
     chown -c "$ftp_user" "$home"
     printf '%s\n%s\n' "$pass" "$pass" | pure-pw useradd "$user" -f "$passwd_file" -u "$ftp_user" -d "$home"

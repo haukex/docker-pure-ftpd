@@ -15,12 +15,19 @@ rsyslogd -n &
 # generate the default snakeoil SSL certificates
 make-ssl-cert generate-default-snakeoil --force-overwrite
 
-/usr/local/bin/user_init.sh
+# Although the directories are set up in the Dockerfile, they might have been mounted
+chmod -c a+rx,u+w /srv
+chmod -c 2775 /srv/ftp
+chown -c pure-ftpd:pure-ftpd /srv/ftp
 
-# ensure the upload.log can be written to - the uploadscript, which isn't run as root,
-# may not have write permissions if /srv/ftp is mounted to the Docker host
+chmod -c a+rx,u+w /var/log
+chmod -c 2775 /var/log/pure-ftpd
+chown -c root:pure-ftpd /var/log/pure-ftpd
+
 touch /srv/ftp/upload.log
-chown -c pure-ftpd /srv/ftp/upload.log
+chown -c pure-ftpd:pure-ftpd /srv/ftp/upload.log
+
+/usr/local/bin/user_init.sh
 
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf
