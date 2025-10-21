@@ -10,14 +10,18 @@ set -meuxo pipefail
 
 if [[ -n "${VALKEY_HOST:-}" ]]; then
     # wait for valkey to be up
+    set +x
+    echo "Waiting for Valkey..."
     retry_count=0
     while ! valkey-cli -h "$VALKEY_HOST" --raw PING; do
         sleep 0.2
         if (( ++retry_count > 100 )); then
-            echo "Valkey is still not up!"
+            echo "Valkey is still not up, aborting!"
             exit 1
         fi
     done
+    echo "Valkey ready"
+    set -x
 fi
 
 # NOTE running rsyslogd this way appears to be better:
@@ -44,14 +48,18 @@ chown -c pure-ftpd:pure-ftpd /srv/ftp/upload.log
 # docs say it's important to start pure-ftpd before pure-uploadscript
 pure-ftpd /etc/pure-ftpd/pure-ftpd.conf
 # wait for the named pipe to appear before starting uploadscript
+set +x
+echo "Waiting for pure-ftpd.upload.pipe..."
 retry_count=0
 while [[ ! -e /var/run/pure-ftpd.upload.pipe ]]; do
     sleep 0.2
     if (( ++retry_count > 100 )); then
-        echo "pure-ftpd.upload.pipe still doesn't exist!"
+        echo "pure-ftpd.upload.pipe still doesn't exist, aborting!"
         exit 1
     fi
 done
+echo "pure-ftpd.upload.pipe ready"
+set -x
 pure-uploadscript -B -u "$(id -u pure-ftpd)" -g "$(id -g pure-ftpd)" -r /usr/local/bin/uploadscript.sh
 # note: pure-ftpd runs as root, workers and pure-uploadscript as uid=pure-ftpd gid=pure-ftpd
 
