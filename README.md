@@ -22,7 +22,7 @@ in the image at the desired SSL certificates.
 
 If the environment variable `VALKEY_HOST` is set, then log messages are
 sent to the stream `pure-ftpd.log` and upload messages to `pure-ftpd.uploads`.
-The Valkey host not being available is (currently) not a fatal error.
+The Valkey host dying while this server is running is currently not a fatal error.
 **Note** these streams are not cleaned up by this container, so you'll need to,
 for example, do a regular `XTRIM` on them.
 

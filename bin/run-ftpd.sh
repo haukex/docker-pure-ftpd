@@ -1,5 +1,5 @@
 #!/bin/bash
-set -meuxo pipefail
+set -meuo pipefail
 # Init script for this pure-ftpd container that starts all necessary processes.
 # This file is a part of the haukex/docker-pure-ftpd repository.
 # Please see the README for author, copyright, and license info.
@@ -8,12 +8,13 @@ set -meuxo pipefail
 # https://docs.docker.com/config/containers/multi-service_container/
 # IMPORTANT: need to run container with --init option
 
+echo "### Booting Pure-FTPd container..."
+
 if [[ -n "${VALKEY_HOST:-}" ]]; then
     # wait for valkey to be up
-    set +x
     echo "Waiting for Valkey..."
     retry_count=0
-    while ! valkey-cli -h "$VALKEY_HOST" --raw PING; do
+    while ! valkey-cli -h "$VALKEY_HOST" --raw PING >/dev/null 2>&1; do
         sleep 0.2
         if (( ++retry_count > 100 )); then
             echo "Valkey is still not up, aborting!"
@@ -21,8 +22,8 @@ if [[ -n "${VALKEY_HOST:-}" ]]; then
         fi
     done
     echo "Valkey ready"
-    set -x
 fi
+set -x
 
 # NOTE running rsyslogd this way appears to be better:
 # https://gist.github.com/haukex/1b3bfa8686b5bed18fd52ed13d99ceb7

@@ -97,3 +97,7 @@ ftp_id="$( docker run --name pure-ftpd-test-srv \
 stop_commands+=("docker stop $ftp_id")
 
 tests/ftpd-tests.pl -h localhost:2121 -f "$temp_dir/ftp" -l "$temp_dir/logs" -L -v localhost
+
+echo "########## ########## ########## Docker Logs ########## ########## ##########"
+docker logs $ftp_id
+echo "########## ########## ########## ########### ########## ########## ##########"
